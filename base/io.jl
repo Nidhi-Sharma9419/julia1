@@ -499,10 +499,17 @@ read!(filename::AbstractString, a) = open(io->read!(io, a), convert(String, file
     readuntil(stream::IO, delim; keep::Bool = false)
     readuntil(filename::AbstractString, delim; keep::Bool = false)
 
+    # Check if elements in the vector are of the right type
+    if !(all(isequal(eltype(delim), UInt8) || issubclass(eltype(delim), AbstractChar) for d in delim))
+        throw(ArgumentError("readuntil: elements in the vector must be of type UInt8 or AbstractChar"))
+    end
+
 Read a string from an I/O `stream` or a file, up to the given delimiter.
 The delimiter can be a `UInt8`, `AbstractChar`, string, or vector.
 Keyword argument `keep` controls whether the delimiter is included in the result.
 The text is assumed to be encoded in UTF-8.
+
+**Note:** The vector must be of type `UInt8` or `AbstractChar`. If the vector contains elements of a different type, an error will be thrown.
 
 Return a `String` if `delim` is an `AbstractChar` or a string
 or otherwise return a `Vector{typeof(delim)}`.   See also [`copyuntil`](@ref)
@@ -517,6 +524,9 @@ julia> readuntil("my_file.txt", 'L')
 
 julia> readuntil("my_file.txt", '.', keep = true)
 "JuliaLang is a GitHub organization."
+
+julia> readuntil(IOBuffer("alpha beta gamma delta"), ['b', 'g'])
+ERROR: ArgumentError: readuntil: elements in the vector must be of type UInt8 or AbstractChar
 
 julia> rm("my_file.txt")
 ```
