@@ -236,23 +236,22 @@ true
 ```
 """
 function eigen(A::AbstractMatrix{T}; permute::Bool=true, scale::Bool=true, sortby::Union{Function,Nothing}=eigsortby) where T
-    _eigen(A; permute, scale, sortby)
+    isdiag(A) && return eigen(Diagonal{eigtype(T)}(diag(A)); sortby)
+    ishermitian(A) && return eigen!(eigencopy_oftype(Hermitian(A), eigtype(T)); sortby)
+    AA = eigencopy_oftype(A, eigtype(T))
+    return eigen!(AA; permute, scale, sortby)
 end
 function eigen(A::AbstractMatrix{T}; permute::Bool=true, scale::Bool=true, sortby::Union{Function,Nothing}=eigsortby) where {T <: Union{Float16,Complex{Float16}}}
-    E = _eigen(A; permute, scale, sortby)
-    values = convert(AbstractVector{isreal(E.values) ? Float16 : Complex{Float16}}, E.values)
-    vectors = convert(AbstractMatrix{isreal(E.vectors) ? Float16 : Complex{Float16}}, E.vectors)
-    return Eigen(values, vectors)
-end
-function _eigen(A::AbstractMatrix{T}; permute=true, scale=true, sortby=eigsortby) where {T}
     isdiag(A) && return eigen(Diagonal{eigtype(T)}(diag(A)); sortby)
-    if ishermitian(A)
+    E = if ishermitian(A)
         eigen!(eigencopy_oftype(Hermitian(A), eigtype(T)); sortby)
     else
         eigen!(eigencopy_oftype(A, eigtype(T)); permute, scale, sortby)
     end
+    values = convert(AbstractVector{isreal(E.values) ? Float16 : Complex{Float16}}, E.values)
+    vectors = convert(AbstractMatrix{isreal(E.vectors) ? Float16 : Complex{Float16}}, E.vectors)
+    return Eigen(values, vectors)
 end
-
 eigen(x::Number) = Eigen([x], fill(one(x), 1, 1))
 
 """
